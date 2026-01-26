@@ -45,10 +45,39 @@ int main() {
 }
 ```
 
-Integrate with CMake (in your project):
+## Integration
+
+### Method 1: CMake FetchContent (Recommended)
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+    xswl-signals
+    GIT_REPOSITORY https://github.com/Wang-Jianwei/xswl-signals.git
+    GIT_TAG main  # or specific version tag
+)
+FetchContent_MakeAvailable(xswl-signals)
+
+target_link_libraries(your_target PRIVATE xswl::signals)
+```
+
+### Method 2: add_subdirectory
 ```cmake
 add_subdirectory(path/to/xswl-signals)
-target_link_libraries(your_target PRIVATE xswl_signals)
+target_link_libraries(your_target PRIVATE xswl::signals)
+```
+
+### Method 3: find_package (after installation)
+```cmake
+find_package(xswl-signals REQUIRED)
+target_link_libraries(your_target PRIVATE xswl::signals)
+```
+
+Install the library:
+```bash
+./build.sh build --install
+# or manually:
+cmake --build build --target install
 ```
 
 ## Examples
