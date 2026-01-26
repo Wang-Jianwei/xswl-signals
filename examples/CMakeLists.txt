@@ -1,0 +1,5 @@
+add_executable(signals_basic basic.cpp)
+target_link_libraries(signals_basic PRIVATE xswl_signals)
+
+add_executable(signals_lifecycle lifecycle.cpp)
+target_link_libraries(signals_lifecycle PRIVATE xswl_signals)

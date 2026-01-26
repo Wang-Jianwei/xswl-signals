@@ -1,0 +1,4 @@
+build/
+CMakeUserPresets.json
+*.swp
+.vscode/

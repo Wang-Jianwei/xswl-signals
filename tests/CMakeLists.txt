@@ -1,0 +1,7 @@
+add_executable(test_signals_base test_signals_base.cpp)
+target_link_libraries(test_signals_base PRIVATE xswl_signals)
+add_test(NAME SignalsBaseTest COMMAND test_signals_base)
+
+add_executable(test_signals_strict test_signals_strict.cpp)
+target_link_libraries(test_signals_strict PRIVATE xswl_signals)
+add_test(NAME SignalsStrictTest COMMAND test_signals_strict)
