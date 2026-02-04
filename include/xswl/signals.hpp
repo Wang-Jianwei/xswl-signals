@@ -131,166 +131,30 @@ struct callable_arity
 };
 
 // ============================================================================
-// 参数适配器：将信号参数适配为槽函数需要的参数数量
+// 参数适配器：将信号参数适配为槽函数需要的参数数量（通用实现）
 // ============================================================================
-template <typename Fn, std::size_t N>
+template <typename Fn, std::size_t N, typename Indices = typename make_index_sequence<N>::type>
 struct arg_adapter;
 
-// 无参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 0>
+template <typename Fn, std::size_t N, std::size_t... Is>
+struct arg_adapter<Fn, N, index_sequence<Is...>>
 {
     Fn fn;
     explicit arg_adapter(Fn f)
         : fn(std::move(f)) {}
 
-    template <typename... A>
-    void operator()(A &&...)
+    // 非 const 版本
+    template <typename... Args>
+    void operator()(Args &&... args)
     {
-        fn();
+        fn(std::get<Is>(std::forward_as_tuple(std::forward<Args>(args)...))...);
     }
 
-    template <typename... A>
-    void operator()(A &&...) const
+    // const 版本
+    template <typename... Args>
+    void operator()(Args &&... args) const
     {
-        fn();
-    }
-};
-
-// 1 个参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 1>
-{
-    Fn fn;
-    explicit arg_adapter(Fn f)
-        : fn(std::move(f)) {}
-
-    template <typename A1, typename... Rest>
-    void operator()(A1 &&a1, Rest &&...)
-    {
-        fn(std::forward<A1>(a1));
-    }
-
-    template <typename A1, typename... Rest>
-    void operator()(A1 &&a1, Rest &&...) const
-    {
-        fn(std::forward<A1>(a1));
-    }
-};
-
-// 2 个参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 2>
-{
-    Fn fn;
-    explicit arg_adapter(Fn f)
-        : fn(std::move(f)) {}
-
-    template <typename A1, typename A2, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, Rest &&...)
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2));
-    }
-
-    template <typename A1, typename A2, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, Rest &&...) const
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2));
-    }
-};
-
-// 3 个参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 3>
-{
-    Fn fn;
-    explicit arg_adapter(Fn f)
-        : fn(std::move(f)) {}
-
-    template <typename A1, typename A2, typename A3, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, Rest &&...)
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3));
-    }
-
-    template <typename A1, typename A2, typename A3, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, Rest &&...) const
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3));
-    }
-};
-
-// 4 个参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 4>
-{
-    Fn fn;
-    explicit arg_adapter(Fn f)
-        : fn(std::move(f)) {}
-
-    template <typename A1, typename A2, typename A3, typename A4, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, Rest &&...)
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3),
-           std::forward<A4>(a4));
-    }
-
-    template <typename A1, typename A2, typename A3, typename A4, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, Rest &&...) const
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3),
-           std::forward<A4>(a4));
-    }
-};
-
-// 5 个参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 5>
-{
-    Fn fn;
-    explicit arg_adapter(Fn f)
-        : fn(std::move(f)) {}
-
-    template <typename A1, typename A2, typename A3, typename A4, typename A5,
-              typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, A5 &&a5, Rest &&...)
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3),
-           std::forward<A4>(a4), std::forward<A5>(a5));
-    }
-
-    template <typename A1, typename A2, typename A3, typename A4, typename A5,
-              typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, A5 &&a5, Rest &&...) const
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3),
-           std::forward<A4>(a4), std::forward<A5>(a5));
-    }
-};
-
-// 6 个参数版本
-template <typename Fn>
-struct arg_adapter<Fn, 6>
-{
-    Fn fn;
-    explicit arg_adapter(Fn f)
-        : fn(std::move(f)) {}
-
-    template <typename A1, typename A2, typename A3, typename A4, typename A5,
-              typename A6, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, A5 &&a5, A6 &&a6, Rest &&...)
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3),
-           std::forward<A4>(a4), std::forward<A5>(a5), std::forward<A6>(a6));
-    }
-
-    template <typename A1, typename A2, typename A3, typename A4, typename A5,
-              typename A6, typename... Rest>
-    void operator()(A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, A5 &&a5, A6 &&a6,
-                    Rest &&...) const
-    {
-        fn(std::forward<A1>(a1), std::forward<A2>(a2), std::forward<A3>(a3),
-           std::forward<A4>(a4), std::forward<A5>(a5), std::forward<A6>(a6));
+        fn(std::get<Is>(std::forward_as_tuple(std::forward<Args>(args)...))...);
     }
 };
 
@@ -410,8 +274,9 @@ struct slot
     std::atomic<bool> executed;        // 用于单次槽的 CAS 控制
     bool single_shot;                  // 是否一次性
     std::weak_ptr<void> tracked;       // 跟踪的 owner/tag（生命周期控制）
+    bool tracked_set;                  // 是否曾经设置过 tracked
 
-    slot(function_type f, int p, bool ss, std::weak_ptr<void> t)
+    slot(function_type f, int p, bool ss, std::weak_ptr<void> t, bool has_tracked)
         : func(std::move(f))
         , priority(p)
         , blocked(false)
@@ -419,25 +284,21 @@ struct slot
         , executed(false)
         , single_shot(ss)
         , tracked(std::move(t))
+        , tracked_set(has_tracked)
     {
-    }
-
-    // tracked 是否曾经被设置（区别 default weak_ptr）
-    bool has_tracked_object() const
-    {
-        return tracked.owner_before(std::weak_ptr<void>{}) || std::weak_ptr<void>{}.owner_before(tracked);
     }
 
     // 基础检查（不包含单次槽的执行状态）
+    // 优化：使用 relaxed 读取非关键标志，减少内存屏障开销
     bool is_callable() const
     {
-        if(blocked.load(std::memory_order_acquire))
+        // 先检查快速路径：blocked 和 pending_removal 用 relaxed 读取
+        // 这些标志的精确同步不影响正确性，最多延迟一次调用
+        if(blocked.load(std::memory_order_relaxed) ||
+           pending_removal.load(std::memory_order_relaxed))
             return false;
 
-        if(pending_removal.load(std::memory_order_acquire))
-            return false;
-
-        if(has_tracked_object() && tracked.expired())
+        if(tracked_set && tracked.expired())
             return false;
 
         return true;
@@ -706,7 +567,8 @@ public:
         return connect_with_arity(
             std::forward<Fn>(func), priority, false, std::weak_ptr<void>(tag_ptr),
             std::integral_constant<std::size_t,
-                                   detail::callable_arity<Fn, Args...>::value>());
+                                   detail::callable_arity<Fn, Args...>::value>(),
+            true);
     }
 
     // -------------------------------------------------------------------------
@@ -765,6 +627,7 @@ public:
                                  });
                 impl_->dirty_ = false;
             }
+            local_slots.reserve(impl_->slots_.size());
             local_slots = impl_->slots_; // 拷贝一份，避免长时间持锁
         }
 
@@ -776,7 +639,7 @@ public:
                 continue;
 
             // 检查 tracked 对象是否过期
-            if(sp->has_tracked_object() && sp->tracked.expired())
+            if(sp->tracked_set && sp->tracked.expired())
             {
                 sp->pending_removal.store(true, std::memory_order_release);
                 need_cleanup = true;
@@ -882,10 +745,11 @@ private:
                                              int priority,
                                              bool single_shot,
                                              std::weak_ptr<void> tracked,
-                                             std::integral_constant<std::size_t, sizeof...(Args)>)
+                                             std::integral_constant<std::size_t, sizeof...(Args)>,
+                                             bool has_tracked = false)
     {
         return connect_impl(function_type(std::forward<Fn>(func)), priority,
-                            single_shot, std::move(tracked));
+                            single_shot, std::move(tracked), has_tracked);
     }
 
     // 参数适配分发（需要适配）
@@ -894,11 +758,12 @@ private:
                                              int priority,
                                              bool single_shot,
                                              std::weak_ptr<void> tracked,
-                                             std::integral_constant<std::size_t, N>)
+                                             std::integral_constant<std::size_t, N>,
+                                             bool has_tracked = false)
     {
         auto adapter = detail::make_arg_adapter<N>(std::forward<Fn>(func));
         return connect_impl(function_type(adapter), priority, single_shot,
-                            std::move(tracked));
+                            std::move(tracked), has_tracked);
     }
 
     // -------------------------------------------------------------------------
@@ -921,7 +786,7 @@ private:
             }
         };
         return connect_impl(function_type(wrapper), priority, single_shot,
-                            std::weak_ptr<void>(obj));
+                            std::weak_ptr<void>(obj), true);
     }
 
     template <typename Obj, typename MemFn, std::size_t N>
@@ -941,7 +806,7 @@ private:
             }
         };
         return connect_impl(function_type(wrapper), priority, single_shot,
-                            std::weak_ptr<void>(obj));
+                            std::weak_ptr<void>(obj), true);
     }
 
     // -------------------------------------------------------------------------
@@ -1049,12 +914,13 @@ private:
     connection_t<Args...> connect_impl(function_type f,
                                        int p,
                                        bool ss,
-                                       std::weak_ptr<void> tracked)
+                                       std::weak_ptr<void> tracked,
+                                       bool has_tracked = false)
     {
         if(!impl_)
             return connection_t<Args...>();
 
-        auto s = std::make_shared<slot_type>(std::move(f), p, ss, std::move(tracked));
+        auto s = std::make_shared<slot_type>(std::move(f), p, ss, std::move(tracked), has_tracked);
         {
             std::lock_guard<std::mutex> lk(impl_->mutex_);
             impl_->slots_.push_back(s);

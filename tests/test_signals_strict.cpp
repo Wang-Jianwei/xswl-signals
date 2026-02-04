@@ -132,6 +132,7 @@ struct Receiver : public std::enable_shared_from_this<Receiver>
 
 // =========================== 1. 基础与不变量 ================================
 
+// 测试：基本连接、发射与断开不变量（empty/slot_count）
 TEST_CASE(basic_connect_emit)
 {
     xswl::signal_t<> sig;
@@ -158,6 +159,7 @@ TEST_CASE(basic_connect_emit)
     ASSERT_EQ(c.get(), 2); // 不再增长
 }
 
+// 测试：带参数信号的参数传递正确性（值和引用类型）
 TEST_CASE(signal_with_args)
 {
     xswl::signal_t<int, std::string> sig;
@@ -174,6 +176,7 @@ TEST_CASE(signal_with_args)
     ASSERT_EQ(r2, "hello");
 }
 
+// 测试：empty 与 slot_count 的行为以及断开连接后的计数变化
 TEST_CASE(empty_and_slot_count)
 {
     xswl::signal_t<int> sig;
@@ -195,6 +198,7 @@ TEST_CASE(empty_and_slot_count)
 
 // =========================== 2. 优先级与顺序 ===============================
 
+// 测试：槽按优先级从高到低执行
 TEST_CASE(priority_order)
 {
     xswl::signal_t<> sig;
@@ -212,6 +216,7 @@ TEST_CASE(priority_order)
     ASSERT_EQ(order[2], 3); // priority -1
 }
 
+// 测试：相同优先级时保持注册顺序（稳定性）
 TEST_CASE(stable_order_same_priority)
 {
     xswl::signal_t<> sig;
@@ -231,6 +236,7 @@ TEST_CASE(stable_order_same_priority)
 
 // =========================== 3. 单次连接语义 ===============================
 
+// 测试：connect_once 单次槽的语义与移除行为
 TEST_CASE(single_shot_basic)
 {
     xswl::signal_t<int> sig;
@@ -247,6 +253,7 @@ TEST_CASE(single_shot_basic)
     ASSERT_TRUE(sig.empty()); // 单次槽执行后应被移除
 }
 
+// 测试：多个单次槽在首次发射后均失效
 TEST_CASE(multiple_single_shot)
 {
     xswl::signal_t<> sig;
@@ -265,6 +272,7 @@ TEST_CASE(multiple_single_shot)
 
 // ======================= 4. 成员函数 & 生命周期 ===========================
 
+// 测试：通过 shared_ptr 连接成员函数并在对象销毁后不再被调用
 TEST_CASE(member_function_shared_ptr_lifetime)
 {
     xswl::signal_t<int> sig;
@@ -292,6 +300,7 @@ TEST_CASE(member_function_shared_ptr_lifetime)
     ASSERT_EQ(c.get(), 2);
 }
 
+// 测试：使用裸指针连接成员函数（不负责生命周期管理）
 TEST_CASE(member_function_raw_pointer)
 {
     xswl::signal_t<int> sig;
@@ -304,6 +313,7 @@ TEST_CASE(member_function_raw_pointer)
     ASSERT_EQ(r.last_int.load(), 5);
 }
 
+// 测试：基于标签的连接与断开，验证按标签移除行为
 TEST_CASE(tag_connect_disconnect)
 {
     xswl::signal_t<int> sig;
@@ -327,7 +337,7 @@ TEST_CASE(tag_connect_disconnect)
     ASSERT_FALSE(ok); // 二次断开失败
 }
 
-// 连接对象在信号析构后调用 disconnect 不应崩溃
+// 测试：信号析构后，仍可安全调用先前连接句柄的 disconnect
 TEST_CASE(disconnect_after_signal_destruction)
 {
     xswl::connection_t<> conn;
@@ -343,6 +353,7 @@ TEST_CASE(disconnect_after_signal_destruction)
 
 // ====================== 5. scoped_connection & group =======================
 
+// 测试：scoped_connection 的 RAII 行为（离开作用域时自动断开）
 TEST_CASE(scoped_connection_raii)
 {
     xswl::signal_t<> sig;
@@ -358,6 +369,7 @@ TEST_CASE(scoped_connection_raii)
     ASSERT_EQ(c.get(), 1); // 已自动断开
 }
 
+// 测试：connection_group 管理多个连接并能批量断开
 TEST_CASE(connection_group_basic)
 {
     xswl::signal_t<> sig;
@@ -381,6 +393,7 @@ TEST_CASE(connection_group_basic)
 
 // =========================== 6. 重入与修改 ================================
 
+// 测试：在 emit 过程中注册新槽，确保不会影响当前正在执行的槽序列
 TEST_CASE(connect_inside_emit)
 {
     xswl::signal_t<> sig;
@@ -403,6 +416,7 @@ TEST_CASE(connect_inside_emit)
     ASSERT_EQ(c.get(), 3);
 }
 
+// 测试：在槽内部断开自身连接，验证当前发射不受影响
 TEST_CASE(disconnect_self_inside_emit)
 {
     xswl::signal_t<> sig;
@@ -421,6 +435,7 @@ TEST_CASE(disconnect_self_inside_emit)
     ASSERT_EQ(c.get(), 1); // 不再执行
 }
 
+// 测试：在高优先级槽中断开其他槽，检查其对本次与下次发射的影响
 TEST_CASE(disconnect_others_inside_emit)
 {
     xswl::signal_t<> sig;
@@ -454,6 +469,7 @@ TEST_CASE(disconnect_others_inside_emit)
     ASSERT_EQ(c2.get(), before2);
 }
 
+// 测试：递归发射（槽内部再次发射），验证嵌套调用计数正确
 TEST_CASE(recursive_emit)
 {
     xswl::signal_t<int> sig;
@@ -471,6 +487,7 @@ TEST_CASE(recursive_emit)
 
 // =========================== 7. 异常安全测试 ==============================
 
+// 测试：若某槽抛异常，不应阻断其他槽的执行
 TEST_CASE(slot_throw_does_not_block_others)
 {
     xswl::signal_t<> sig;
@@ -486,6 +503,7 @@ TEST_CASE(slot_throw_does_not_block_others)
 
 // =========================== 8. 多线程并发 =================================
 
+// 并发测试：多线程并发发射带参数的信号，验证集成一致性
 TEST_CASE(concurrent_emit_many_threads)
 {
     xswl::signal_t<int> sig;
@@ -511,6 +529,7 @@ TEST_CASE(concurrent_emit_many_threads)
     ASSERT_EQ(sum.load(), threads * loops);
 }
 
+// 并发测试：在持续发射期间进行连接/断开，验证不会崩溃并维持基本不变量
 TEST_CASE(concurrent_connect_disconnect_while_emit)
 {
     xswl::signal_t<> sig;
@@ -551,6 +570,7 @@ TEST_CASE(concurrent_connect_disconnect_while_emit)
     ASSERT_GE(calls.load(), 0);
 }
 
+// 并发测试：在发射线程运行时反复 block/unblock 连接，验证稳定性
 TEST_CASE(concurrent_block_unblock)
 {
     xswl::signal_t<> sig;
@@ -583,7 +603,7 @@ TEST_CASE(concurrent_block_unblock)
     ASSERT_GE(calls.load(), 0);
 }
 
-// 多线程下的单次连接应最多调用一次
+// 多线程测试：单次槽在并发场景中应至多被执行一次
 TEST_CASE(concurrent_single_shot)
 {
     xswl::signal_t<> sig;
@@ -628,7 +648,7 @@ TEST_CASE(concurrent_single_shot)
     ASSERT_EQ(total, slots); // 全都执行了一次（有可能某些没执行也算合理，这里强测一把）
 }
 
-// 随机压力测试：多个线程随机对一个 signal 做操作
+// 随机压力测试：多个线程对单个信号进行随机操作（emit/connect/disconnect/block/unblock）以检验稳定性
 TEST_CASE(random_stress_test)
 {
     xswl::signal_t<int> sig;
@@ -707,6 +727,7 @@ TEST_CASE(random_stress_test)
 
 // =========================== 9. 各种类型参数 ===============================
 
+// 测试：引用和 const 引用参数传递的正确性
 TEST_CASE(ref_and_const_ref_args)
 {
     xswl::signal_t<int&, const std::string&> sig;
@@ -727,6 +748,7 @@ TEST_CASE(ref_and_const_ref_args)
     ASSERT_EQ(seen_s, "hello");
 }
 
+// 测试：shared_ptr 参数的复制和引用计数行为
 TEST_CASE(shared_ptr_args)
 {
     xswl::signal_t<std::shared_ptr<int> > sig;
@@ -746,6 +768,7 @@ TEST_CASE(shared_ptr_args)
 
 // ============================ 10. 真实场景模拟 =============================
 
+// 场景模拟：可观察者模式，用信号表示属性变化并记录历史
 TEST_CASE(observable_pattern)
 {
     struct Observable {
@@ -778,6 +801,7 @@ TEST_CASE(observable_pattern)
     ASSERT_EQ(hist[2], 3);
 }
 
+// 场景模拟：信号链（一个信号触发另一个），验证传递与累加
 TEST_CASE(signal_chaining)
 {
     xswl::signal_t<int> s1;
@@ -794,7 +818,7 @@ TEST_CASE(signal_chaining)
     ASSERT_EQ(c.get(), 16);
 }
 
-// 参数适配测试
+// 参数适配测试：注册不同参数数量的槽，验证只传递所需参数
 TEST_CASE(partial_args_connect)
 {
     xswl::signal_t<int, double, std::string> sig;
@@ -828,6 +852,7 @@ TEST_CASE(partial_args_connect)
     ASSERT_EQ(v3, "test");
 }
 
+// 测试：参数适配与一次性槽的组合语义（部分参数的单次槽）
 TEST_CASE(partial_args_single_shot)
 {
     xswl::signal_t<int, int> sig;
@@ -843,6 +868,7 @@ TEST_CASE(partial_args_single_shot)
     ASSERT_EQ(c.get(), 11);  // 不再执行
 }
 
+// 测试：带标签的参数适配连接，验证标签断开时不会影响其他槽
 TEST_CASE(partial_args_with_tag)
 {
     xswl::signal_t<int, std::string> sig;
@@ -859,6 +885,7 @@ TEST_CASE(partial_args_with_tag)
     ASSERT_EQ(value, 100);
 }
 
+// 测试：零参数信号仍然正常工作
 TEST_CASE(zero_arg_signal_still_works)
 {
     xswl::signal_t<> sig;
@@ -870,7 +897,7 @@ TEST_CASE(zero_arg_signal_still_works)
     ASSERT_EQ(c.get(), 1);
 }
 
-// 单次槽多线程安全
+// 测试：多线程环境下单次槽必须恰好被调用一次
 TEST_CASE(concurrent_single_shot_exact_once)
 {
     xswl::signal_t<> sig;
@@ -896,7 +923,7 @@ TEST_CASE(concurrent_single_shot_exact_once)
     ASSERT_EQ(call_count.load(), 1);
 }
 
-// 移动后安全
+// 测试：移动信号后源对象应处于安全状态，被移动到的对象应保持原有槽
 TEST_CASE(moved_signal_safety)
 {
     xswl::signal_t<> s1;
@@ -914,7 +941,7 @@ TEST_CASE(moved_signal_safety)
     ASSERT_FALSE(s2.empty());
 }
 
-// 成员函数参数适配
+// 测试：成员函数的参数适配（仅传递需要的前 N 个参数）
 TEST_CASE(member_function_partial_args)
 {
     struct Receiver
